@@ -44,6 +44,10 @@ Hover over individual settings for more info.
 		formula = (
 			"\n  = max(1, log(playerWorth, basePrice x 10)) ^ (exp / 100)"
 		),
+		enableBarter = {
+			label = "Change prices of bought items?",
+			description = "\nWhen enabled the prices of bought items scale with the player net worth."
+		},
 		barterExp = {
 			label = "barterExp = %s",
 			description = (
@@ -51,8 +55,12 @@ Hover over individual settings for more info.
 
 				"The higher the exponent, the more items cost.\n\n"..
 
-				"Default: 400"
+				"Default: 200"
 			),
+		},
+		enableTraining = {
+			label = "Change prices of Training services?",
+			description = "\nWhen enabled the Training prices scale with the player net worth."
 		},
 		trainingExp = {
 			label = "trainingExp = %s",
@@ -84,6 +92,10 @@ Hover over individual settings for more info.
 				"Default: 10"
 			),
 		},
+		enableGeneric = {
+			label = "Change prices of Repair and Travel services?",
+			description = "\nWhen enabled the prices for Repair and Travel services scale with the player net worth."
+		},
 		genericExp = {
 			label = "genericExp = %s",
 			description = (
@@ -92,6 +104,10 @@ Hover over individual settings for more info.
 
 				"Default: 200"
 			)
+		},
+		enableSpells = {
+			label = "Change prices of bought spells?",
+			description = "\nWhen enabled the prices of bought spells scale with the player net worth."
 		},
 		spellExp = {
 			label = "spellExp = %s",
@@ -178,6 +194,11 @@ do	-- Main Settings Block
 			description = text.barter.description
 		}
 
+		barter:createOnOffButton{
+			label = text.barter.enableBarter.label,
+			description = text.barter.enableBarter.description,
+			variable = createTableVar("enableBarter")
+		}
 		barter:createSlider{
 			label = text.barter.barterExp.label,
 			description = text.barter.barterExp.description,
@@ -189,6 +210,11 @@ do	-- Main Settings Block
 		}
 
 		newline(barter)
+		barter:createOnOffButton{
+			label = text.barter.enableTraining.label,
+			description = text.barter.enableTraining.description,
+			variable = createTableVar("enableTraining")
+		}
 		barter:createSlider{
 			label = text.barter.trainingExp.label,
 			description = text.barter.trainingExp.description,
@@ -221,6 +247,11 @@ do	-- Main Settings Block
 		}
 
 		newline(generic)
+		generic:createOnOffButton{
+			label = text.generic.enableGeneric.label,
+			description = text.generic.enableGeneric.description,
+			variable = createTableVar("enableGeneric")
+		}
 		generic:createSlider{
 			label = text.generic.genericExp.label,
 			description = text.generic.genericExp.description,
@@ -232,6 +263,11 @@ do	-- Main Settings Block
 		}
 
 		newline(generic)
+		generic:createOnOffButton{
+			label = text.generic.enableSpells.label,
+			description = text.generic.enableSpells.description,
+			variable = createTableVar("enableSpells")
+		}
 		generic:createSlider{
 			label = text.generic.spellExp.label,
 			description = text.generic.spellExp.description,

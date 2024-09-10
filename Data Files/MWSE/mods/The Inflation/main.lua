@@ -10,16 +10,16 @@ local function getPlayerNetWorth()
 	elseif config.netWorthCaluclation == netWorth.equippedItems then
 		for _, stack in pairs(tes3.player.object.equipment) do
 			local item = stack.object
-            worth = worth + item.value
-        end
+			worth = worth + item.value
+		end
 	elseif config.netWorthCaluclation == netWorth.wholeInventory then
 		for _, itemStack in pairs(tes3.player.object.inventory) do
 			local item = itemStack.object
-            worth = worth + item.value * itemStack.count
+			worth = worth + item.value * itemStack.count
 		end
 	end
 
-	if config.spellsAffectNetWorth then	
+	if config.spellsAffectNetWorth then
 		for _, spell in pairs(tes3.player.object.spells.iterator) do
 			if spell.castType == tes3.spellType.spell then
 				worth = worth + spell.value
@@ -69,13 +69,34 @@ local function changeBarterPrice(e)
 	e.price = e.price * mod
 end
 
-event.register("initialized", function()
-	event.register("calcRepairPrice", changeGenericPrice)
-	event.register("calcTravelPrice", changeGenericPrice)
-	event.register("calcSpellPrice", changeSpellPrice)
+local function enableMod()
+	if config.enableBarter then
+		event.register("calcBarterPrice", changeBarterPrice)
+	end
 
-	event.register("calcTrainingPrice", changeTrainingPrice)
-	event.register("calcBarterPrice", changeBarterPrice)
+	if config.enableTraining then
+		event.register("calcTrainingPrice", changeTrainingPrice)
+	end
+
+	if config.enableGeneric then
+		event.register("calcRepairPrice", changeGenericPrice)
+		event.register("calcTravelPrice", changeGenericPrice)
+	end
+
+	if config.enableSpells then
+		event.register("calcSpellPrice", changeSpellPrice)
+	end
+end
+
+event.register("initialized", enableMod)
+event.register("The Inflation:Config Changed", function()
+	event.unregister("calcBarterPrice", changeBarterPrice)
+	event.unregister("calcTrainingPrice", changeTrainingPrice)
+	event.unregister("calcRepairPrice", changeGenericPrice)
+	event.unregister("calcTravelPrice", changeGenericPrice)
+	event.unregister("calcSpellPrice", changeSpellPrice)
+
+	enableMod()
 end)
 event.register("modConfigReady", function()
 	require("The Inflation.mcm")

@@ -7,12 +7,16 @@ this.netWorth = {
 }
 local configFile = "The Inflation"
 local defaultConfig = {
+	enableBarter = true,
+	enableGeneric = true,
+	enableSpells = true,
+	enableTraining = true,
 	netWorthCaluclation = this.netWorth.wholeInventory,
 	spellsAffectNetWorth = true,
 	base = 10,
 	genericExp = 2,
 	trainingExp = 5,
-	barterExp = 4,
+	barterExp = 2,
 	spellExp = 2.5,
 }
 local decimalShifts = {
@@ -24,7 +28,7 @@ local decimalShifts = {
 local cachedConfig = mwse.loadConfig(configFile, defaultConfig)
 
 
-this.version = 1.0
+this.version = 1.1
 this.config = setmetatable({}, {
 	__index = cachedConfig,
 	__tostring = function()
@@ -65,6 +69,7 @@ this.mcmSaveConfig = function (mcmConfig)
 	end
 
 	mwse.saveConfig(configFile, cachedConfig)
+	event.trigger("The Inflation:Config Changed")
 end
 
 return this
