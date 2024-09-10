@@ -1,11 +1,16 @@
-local this = {}
+local configFile = "The Inflation"
 
+local this = {
+	version = "1.2.0",
+	--- @class TheInflation.ConfigTable
+	config = {},
+}
 this.netWorth = {
 	goldOnly = 0,
 	equippedItems = 1,
 	wholeInventory = 2,
 }
-local configFile = "The Inflation"
+--- @class TheInflation.ConfigTable
 local defaultConfig = {
 	enableBarter = true,
 	enableGeneric = true,
@@ -19,55 +24,24 @@ local defaultConfig = {
 	barterExp = 2,
 	spellExp = 2.5,
 }
-local decimalShifts = {
-	genericExp = 2,
-	trainingExp = 2,
-	barterExp = 2,
-	spellExp = 2,
-}
+this.default = defaultConfig
+
 local cachedConfig = mwse.loadConfig(configFile, defaultConfig)
+setmetatable(this.config, { __index = cachedConfig })
 
 
-this.version = 1.1
-this.config = setmetatable({}, {
-	__index = cachedConfig,
-	__tostring = function()
-		local s = "{ "
-		local sep1 = " = "
-		local sep2 = ", "
-		for key, value in pairs(cachedConfig) do
-			s = s .. key .. sep1 .. value .. sep2
-		end
-		s = s .. " }"
-		return s .. "}"
-	end
-})
-
-this.mcmGetConfig = function()
-	local mcmConfig = table.copy(cachedConfig)
-
-	for setting, value in pairs(mcmConfig) do
-		if decimalShifts[setting] then
-			mcmConfig[setting] = value * 10 ^ decimalShifts[setting]
-		end
-	end
-
-	return mcmConfig
+--- Returns a copy of the current config table.
+--- This function should only be used in mcm\init.lua
+--- @return TheInflation.ConfigTable
+function this.getConfig()
+	return table.copy(cachedConfig)
 end
 
-this.mcmSaveConfig = function (mcmConfig)
-	if mcmConfig.eventType then
-		mcmConfig.eventType = nil
-	end
-
-	for setting, value in pairs(mcmConfig) do
-		if decimalShifts[setting] then
-			cachedConfig[setting] = value / 10 ^ decimalShifts[setting]
-		else
-			cachedConfig[setting] = value
-		end
-	end
-
+--- Saves the config table to mod's config file.
+--- This function should only be used in mcm\init.lua
+--- @param mcmConfig TheInflation.ConfigTable
+this.saveConfig = function(mcmConfig)
+	table.copy(mcmConfig, cachedConfig)
 	mwse.saveConfig(configFile, cachedConfig)
 	event.trigger("The Inflation:Config Changed")
 end

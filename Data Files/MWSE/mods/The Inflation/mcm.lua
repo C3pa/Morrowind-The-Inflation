@@ -1,25 +1,25 @@
-local config = require("The Inflation.config")
-local mcmConfig = config.mcmGetConfig()
+local configlib = require("The Inflation.config")
+local mcmConfig = configlib.getConfig()
 
 
 local text = {
 	sideBarDefault = [[
-	
+
 Welcome to The Inflation!
-	
+
 Hover over individual settings for more info.
 
 ]],
 
 	worth = {
 		options = {
-			{ label = "Gold only", value = config.netWorth.goldOnly },
-			{ label = "All equipped items", value = config.netWorth.equippedItems },
-			{ label = "All the items in inventory", value = config.netWorth.wholeInventory },
+			{ label = "Gold only", value = configlib.netWorth.goldOnly },
+			{ label = "All equipped items", value = configlib.netWorth.equippedItems },
+			{ label = "All the items in inventory", value = configlib.netWorth.wholeInventory },
 		},
 		label = "How shall player's net worth be determined?",
 		description = (
-			"\nGold only - player's net worth is the amount of gold the player is currently carring.\n\n"..
+			"\nGold only - player's net worth is the amount of gold the player is currently carrying.\n\n"..
 
 			"All equipped items - player's worth is the value of all the items the player currently has equipped.\n\n"..
 
@@ -42,7 +42,7 @@ Hover over individual settings for more info.
 			"The exponent used in the formula can be changed separately for bartering and training."
 		),
 		formula = (
-			"\n  = max(1, log(playerWorth, basePrice x 10)) ^ (exp / 100)"
+			"\n  = max(1, log(playerWorth, basePrice x 10)) ^ exp"
 		),
 		enableBarter = {
 			label = "Change prices of bought items?",
@@ -53,9 +53,7 @@ Hover over individual settings for more info.
 			description = (
 				"\nThe exponent used in cost adjustments for bartering.\n\n"..
 
-				"The higher the exponent, the more items cost.\n\n"..
-
-				"Default: 200"
+				"The higher the exponent, the more items cost."
 			),
 		},
 		enableTraining = {
@@ -67,9 +65,7 @@ Hover over individual settings for more info.
 			description = (
 				"\nThe exponent used in cost adjustments for training.\n\n"..
 
-				"The higher the exponent, the more training costs.\n\n"..
-
-				"Default: 500"
+				"The higher the exponent, the more training costs."
 			),
 		},
 	},
@@ -83,14 +79,10 @@ Hover over individual settings for more info.
 			"There is one setting which applies for repair and travel services, and another that "..
 			"applies for spells."
 		),
-		formula = "\n  = max(1, log(playerWorth / basePrice, base)) ^ (exp / 100)",
+		formula = "\n  = max(1, log(playerWorth / basePrice, base)) ^ exp",
 		base = {
 			label = "base = %s",
-			description = (
-				"\nIncreasing this value will make prices lower, while decreasing it will make the prices higher.\n\n"..
-
-				"Default: 10"
-			),
+			description = "\nIncreasing this value will make prices lower, while decreasing it will make the prices higher.",
 		},
 		enableGeneric = {
 			label = "Change prices of Repair and Travel services?",
@@ -100,9 +92,7 @@ Hover over individual settings for more info.
 			label = "genericExp = %s",
 			description = (
 				"\nThe exponent used for adjusting the prices of repair and travel services. The higher the exponent, the pricier "..
-				"the services will be.\n\n"..
-
-				"Default: 200"
+				"the services will be."
 			)
 		},
 		enableSpells = {
@@ -115,167 +105,172 @@ Hover over individual settings for more info.
 				"\nThe exponent used for spell price adjustment. Usually spells are one-time purchase, so they cost"..
 				" more, which translates to higher exponent with defauls settings. This value can be changed.\n\n"..
 
-				"The higher the exponent, the more spells will cost.\n\n"..
-
-				"Default: 250"
+				"The higher the exponent, the more spells will cost."
 			)
 		},
 	},
 }
 
-
-local function postFormat(self)
-    self.elements.info.layoutOriginFractionX = 0.5
-end
-
 local function newline(component)
-	component:createInfo{ text = "\n" }
+	component:createInfo({ text = "\n" })
 end
 
-local function addSideBar(component)
-    component.sidebar:createInfo{ text = text.sideBarDefault }
-	component.sidebar:createHyperLink{
-        text = "Made by C3pa",
-        url = "https://www.nexusmods.com/users/37172285?tab=user+files",
-        postCreate = postFormat,
-    }
+--- @param container mwseMCMSideBarPage
+local function addSideBar(container)
+	container.sidebar:createInfo({ text = text.sideBarDefault })
+	container.sidebar:createHyperlink({
+		text = "Made by C3pa",
+		url = "https://www.nexusmods.com/users/37172285?tab=user+files",
+		postCreate = function(self)
+			self.elements.info.absolutePosAlignX = 0.5
+		end,
+	})
 end
 
 local function createTableVar(id)
-    return mwse.mcm.createTableVariable{ id = id, table = mcmConfig }
+	return mwse.mcm.createTableVariable({ id = id, table = mcmConfig })
 end
 
 
-local template = mwse.mcm.createTemplate{
-	name = "The Inflation",
-	headerImagePath = "MWSE/mods/The Inflation/MCMHeader.tga",
-	onClose = function()
-		config.mcmSaveConfig(mcmConfig)
-	end
-}
-template:register()
+local function registerModConfig()
+	local template = mwse.mcm.createTemplate({
+		name = "The Inflation",
+		config = mcmConfig,
+		defaultConfig = configlib.default,
+		headerImagePath = "MWSE/mods/The Inflation/MCMHeader.tga",
+		onClose = function()
+			configlib.saveConfig(mcmConfig)
+		end,
+		showDefaultSetting = true,
+	})
+	template:register()
 
-
-
-
-do	-- Main Settings Block
-	local page = template:createSideBarPage{ label = "Settings" }
+	local page = template:createSideBarPage({
+		label = "Settings",
+		showReset = true,
+	})
 	addSideBar(page)
 
 	do	-- Net Worth Block
-		local netWorth = page:createCategory{ label = "\nPlayer Net Worth" }
+		local netWorth = page:createCategory({ label = "\nPlayer Net Worth" })
 
 		newline(netWorth)
-		netWorth:createInfo{
+		netWorth:createInfo({
 			label = text.worth.label,
 			description = text.worth.description,
-		}
-		netWorth:createDropdown{
+		})
+		netWorth:createDropdown({
 			options = text.worth.options,
-			description  = text.worth.description,
-			variable = createTableVar("netWorthCaluclation")
-		}
+			description = text.worth.description,
+			configKey = "netWorthCaluclation",
+		})
 
 		newline(netWorth)
-		netWorth:createOnOffButton{
+		netWorth:createOnOffButton({
 			label = text.spellsWorth.label,
 			description = text.spellsWorth.description,
-			variable = createTableVar("spellsAffectNetWorth")
-		}
+			configKey = "spellsAffectNetWorth",
+		})
 	end
 
 	do	-- Bartering/Training Block
-		local barter = page:createCategory{
+		local barter = page:createCategory({
 			label = text.barter.label,
 			description = text.barter.description,
-		}
-		barter:createInfo{
+		})
+		barter:createInfo({
 			label = text.barter.formula,
 			description = text.barter.description
-		}
+		})
 
-		barter:createOnOffButton{
+		barter:createOnOffButton({
 			label = text.barter.enableBarter.label,
 			description = text.barter.enableBarter.description,
-			variable = createTableVar("enableBarter")
-		}
-		barter:createSlider{
+			configKey = "enableBarter",
+		})
+		barter:createSlider({
 			label = text.barter.barterExp.label,
 			description = text.barter.barterExp.description,
-			min = 100,
-			max = 600,
-			step = 5,
-			jump = 25,
-			variable = createTableVar("barterExp")
-		}
+			min = 1.0,
+			max = 6.0,
+			step = 0.05,
+			jump = 0.25,
+			decimalPlaces = 2,
+			configKey = "barterExp"
+		})
 
 		newline(barter)
-		barter:createOnOffButton{
+		barter:createOnOffButton({
 			label = text.barter.enableTraining.label,
 			description = text.barter.enableTraining.description,
-			variable = createTableVar("enableTraining")
-		}
-		barter:createSlider{
+			configKey = "enableTraining",
+		})
+		barter:createSlider({
 			label = text.barter.trainingExp.label,
 			description = text.barter.trainingExp.description,
-			min = 100,
-			max = 600,
-			step = 5,
-			jump = 25,
-			variable = createTableVar("trainingExp")
-		}
+			min = 1.0,
+			max = 6.00,
+			step = 0.05,
+			jump = 0.25,
+			decimalPlaces = 2,
+			configKey = "trainingExp",
+		})
 	end
 
 	do	-- Generic/Spells Block
-		local generic = page:createCategory{
+		local generic = page:createCategory({
 			label = text.generic.label,
 			description = text.generic.description,
-		}
-		generic:createInfo{
+		})
+		generic:createInfo({
 			label = text.generic.formula,
 			description = text.generic.description,
-		}
+		})
 
-		generic:createSlider{
+		generic:createSlider({
 			label = text.generic.base.label,
 			description = text.generic.base.description,
 			min = 2,
 			max = 100,
 			step = 1,
 			jump = 5,
-			variable = createTableVar("base")
-		}
+			configKey = "base",
+		})
 
 		newline(generic)
-		generic:createOnOffButton{
+		generic:createOnOffButton({
 			label = text.generic.enableGeneric.label,
 			description = text.generic.enableGeneric.description,
-			variable = createTableVar("enableGeneric")
-		}
-		generic:createSlider{
+			configKey = "enableGeneric",
+		})
+		generic:createSlider({
 			label = text.generic.genericExp.label,
 			description = text.generic.genericExp.description,
-			min = 100,
-			max = 600,
-			step = 5,
-			jump = 25,
-			variable = createTableVar("genericExp")
-		}
+			min = 1.0,
+			max = 6.0,
+			step = 0.05,
+			jump = 0.25,
+			decimalPlaces = 2,
+			configKey = "genericExp",
+		})
 
 		newline(generic)
-		generic:createOnOffButton{
+		generic:createOnOffButton({
 			label = text.generic.enableSpells.label,
 			description = text.generic.enableSpells.description,
-			variable = createTableVar("enableSpells")
-		}
-		generic:createSlider{
+			configKey = "enableSpells",
+		})
+		generic:createSlider({
 			label = text.generic.spellExp.label,
 			description = text.generic.spellExp.description,
-			min = 100,
-			max = 600,
-			step = 5,
-			jump = 25,
-			variable = createTableVar("spellExp")
-		}
+			min = 1.0,
+			max = 6.0,
+			step = 0.05,
+			jump = 0.25,
+			decimalPlaces = 2,
+			configKey = "spellExp",
+		})
 	end
 end
+
+event.register(tes3.event.modConfigReady, registerModConfig)

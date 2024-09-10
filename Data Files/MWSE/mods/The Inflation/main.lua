@@ -1,26 +1,50 @@
-local config = require("The Inflation.config").config
-local netWorth = require("The Inflation.config").netWorth
+local configlib = require("The Inflation.config")
+dofile("The Inflation.mcm")
+
+
+local config = configlib.config
+local netWorth = configlib.netWorth
+local accountBalanceVars = {
+	-- The Imperial Bank by vaelta44
+	-- https://www.nexusmods.com/morrowind/mods/54889
+	-- va_imperialbank.esp
+	"BankAccount",
+	-- Tamriel_Data.esm
+	"T_Glob_Bank_Bri_AcctAmount",
+	"T_Glob_Bank_Hla_AcctAmount",
+}
+
+local function getBankAccountBalance()
+	local total = 0
+
+	for _, varId in ipairs(accountBalanceVars) do
+		local balance = tes3.getGlobal(varId)
+		if balance then
+			total = total + balance
+		end
+	end
+
+	return total
+end
 
 local function getPlayerNetWorth()
-	local worth = 0
+	-- Take into account gold deposited in banks
+	local worth = getBankAccountBalance()
+	local playerActor = tes3.player.object --[[@as tes3npcInstance]]
 
 	if config.netWorthCaluclation == netWorth.goldOnly then
 		worth = tes3.getPlayerGold()
-
 	elseif config.netWorthCaluclation == netWorth.equippedItems then
-		for _, stack in pairs(tes3.player.object.equipment) do
-			local item = stack.object
-			worth = worth + item.value
-		end
+		worth = playerActor:getEquipmentValue({ useDurability = true })
 	elseif config.netWorthCaluclation == netWorth.wholeInventory then
-		for _, itemStack in pairs(tes3.player.object.inventory) do
+		for _, itemStack in pairs(playerActor.inventory) do
 			local item = itemStack.object
 			worth = worth + item.value * itemStack.count
 		end
 	end
 
 	if config.spellsAffectNetWorth then
-		for _, spell in pairs(tes3.player.object.spells.iterator) do
+		for _, spell in pairs(playerActor.spells.iterator) do
 			if spell.castType == tes3.spellType.spell then
 				worth = worth + spell.value
 			end
@@ -30,6 +54,7 @@ local function getPlayerNetWorth()
 	return worth
 end
 
+--- @param e calcRepairPriceEventData|calcTravelPriceEventData
 local function changeGenericPrice(e)
 	local pw = getPlayerNetWorth()
 	local mod = math.max(1, math.log(pw / e.basePrice, config.base))
@@ -38,6 +63,7 @@ local function changeGenericPrice(e)
 	e.price = e.price * mod
 end
 
+--- @param e calcSpellPriceEventData
 local function changeSpellPrice(e)
 	local pw = getPlayerNetWorth()
 	local mod = math.max(1, math.log(pw / e.basePrice, config.base))
@@ -46,6 +72,7 @@ local function changeSpellPrice(e)
 	e.price = e.price * mod
 end
 
+--- @param e calcTrainingPriceEventData
 local function changeTrainingPrice(e)
 	local pw = getPlayerNetWorth()
 	local mod = math.max(1, math.log(pw, e.basePrice * 10))
@@ -54,16 +81,14 @@ local function changeTrainingPrice(e)
 	e.price = e.price * mod
 end
 
+--- @param e calcBarterPriceEventData
 local function changeBarterPrice(e)
-	local mod
+	local mod = 1.0
 
 	if e.buying then
 		local pw = getPlayerNetWorth()
 		mod = math.max(1, math.log(pw, e.basePrice * 10))
 		mod = mod ^ config.barterExp
-
-	else
-		mod = 1
 	end
 
 	e.price = e.price * mod
@@ -71,33 +96,30 @@ end
 
 local function enableMod()
 	if config.enableBarter then
-		event.register("calcBarterPrice", changeBarterPrice)
+		event.register(tes3.event.calcBarterPrice, changeBarterPrice)
 	end
 
 	if config.enableTraining then
-		event.register("calcTrainingPrice", changeTrainingPrice)
+		event.register(tes3.event.calcTrainingPrice, changeTrainingPrice)
 	end
 
 	if config.enableGeneric then
-		event.register("calcRepairPrice", changeGenericPrice)
-		event.register("calcTravelPrice", changeGenericPrice)
+		event.register(tes3.event.calcRepairPrice, changeGenericPrice)
+		event.register(tes3.event.calcTravelPrice, changeGenericPrice)
 	end
 
 	if config.enableSpells then
-		event.register("calcSpellPrice", changeSpellPrice)
+		event.register(tes3.event.calcSpellPrice, changeSpellPrice)
 	end
 end
 
-event.register("initialized", enableMod)
+event.register(tes3.event.initialized, enableMod)
 event.register("The Inflation:Config Changed", function()
-	event.unregister("calcBarterPrice", changeBarterPrice)
-	event.unregister("calcTrainingPrice", changeTrainingPrice)
-	event.unregister("calcRepairPrice", changeGenericPrice)
-	event.unregister("calcTravelPrice", changeGenericPrice)
-	event.unregister("calcSpellPrice", changeSpellPrice)
+	event.unregister(tes3.event.calcBarterPrice, changeBarterPrice)
+	event.unregister(tes3.event.calcTrainingPrice, changeTrainingPrice)
+	event.unregister(tes3.event.calcRepairPrice, changeGenericPrice)
+	event.unregister(tes3.event.calcTravelPrice, changeGenericPrice)
+	event.unregister(tes3.event.calcSpellPrice, changeSpellPrice)
 
 	enableMod()
-end)
-event.register("modConfigReady", function()
-	require("The Inflation.mcm")
 end)

@@ -1,4 +1,4 @@
-# Morrowind The Inflation
+# The Inflation
 
 An economy rebalance mod for Morrowind. The mod changes the prices when buying items, spells, and also repair, travel, and training services according to the player's net worth. The higher the player's net worth - the more the services cost.
 
